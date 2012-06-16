@@ -40,8 +40,6 @@ formValidator.prototype.validateField = function(field, event) {
 formValidator.prototype.validateFields = function(fields,event) {
 	var errors = [];
 	
-	console.log(fields);
-	
 	for(var i in fields) {
 		try {
 			this.runValidation(fields[i], event);
