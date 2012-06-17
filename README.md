@@ -5,11 +5,12 @@ This is an extremely light weight javascript form validation class.
 
 Unlike most validation libraries out there,
 JS Form Validator doesn't make any assumptions about how your code is structured or how/when you run validation.
-It relies heavily on configuration over convention.
+It relies heavily on configuration over convention and as a result can easily be integrated into existing projects.
 
 JS Form Validator is javascript framework agnostic.  It will work fine without a framework and can 
 also take advantage of MooTools, jQuery, etc. if desired.
 
+Check out example.html for a fully working demonstration.
 
 Configuration
 ===================
@@ -55,7 +56,9 @@ Mootools and others will be similar and writing straight javascript is a pain.
 
 removeError
 ----------------
-This is a callback function that is called when a field passes validation.  It takes the field as an argument.
+This is a callback function that should remove a field's errors.  It takes the field as an argument.
+
+This should fail gracefully if the field doesn't currently have an error.
 
 ```javascript
 options.removeError = function(field) {
@@ -96,42 +99,36 @@ options.onErrors = function(errors, event) {
 ```
 rules
 --------------------
-This is an object containing all the validation logic.  
-The keys are field identifiers and the values are validation functions.  The functions should throw an exception with error message on failure.
-
-Most of the time, you would probably want to use the field's id or name as the identifier.
-
+This is an object containing all the validation logic.
+The keys are field identifiers and the values are objects containing a 'field' and 'validate' parameter.
+Most of the time, you probably want to use the field's id or name as the key.
+The 'field' parameter is what will pass into the validate function as well as addError, removeError, etc.
+The 'validate' parameter is a function that throws an exception message when validation fails.
 The 1st argument to the validation function is the field.  The 2nd argument is the event that caused the validation.
 
 ```javascript
+//jquery example
 options.rules = {
-  'name': function(field, event) {
-    //jquery example
-    if(field.val().length < 2) throw "Names must be at least 2 letters.";
-    if(/[^a-zA-Z '\-]/.test(field.val())) throw "That name contains invalid characters";
+  'name': {
+    'field': $('#name'),
+    'validate': function(field, event) {
+      if(field.val().length < 2) throw "Names must be at least 2 letters.";
+      if(/[^a-zA-Z '\-]/.test(field.val())) throw "That name contains invalid characters";
+    }
   },
-  'home_phone': function(field, event) {
-    //only fail validation when submitting
-    if(event==='submit') {
-      if(!field.val().length) throw "Please enter a phone number";
+  'home_phone': {
+    'field': $('#home_phone'),
+    'validate': function(field, event) {
+      //only fail validation when submitting
+      if(event==='submit') {
+        if(!field.val().length) throw "Please enter a phone number";
+      }
     }
   }
 };
 ```
 
 If you try and validate a field that doesn't have a rule associated, it will automatically pass validation.
-
-getFieldKey
-----------------
-This is a callback that takes a field as an argument and returns back the field's identifier.
-The returned identifier is used to look up the validation rule to use.
-
-```javascript
-options.getFieldKey = function(field) {
-  //jquery example
-  return field.attr('id');
-}
-```
 
 Running Validation
 =====================
@@ -143,14 +140,11 @@ The most common case is to run validation when a form submits.
 ```javascript
 //jquery example
 $('#my_form').on('submit',function() {
-  var fields = [];
+  //this will run all the validation rules
+  return validator.validateFields('submit');
   
-  //get a collection of all input elements and build array of jQuery objects
-  $('input,select,textarea',$(this)).each(function() {
-    fields.push($(this));
-  });
-  
-  return validator.validateFields(fields,'submit');
+  //this will only run the selected validation rules
+  return validator.validateFields(['name','home_phone']);
 });
 ```
 
@@ -159,7 +153,7 @@ Another common use case is to validate an input when it loses focus.
 ```javascript
 //jquery example
 $('#my_form').on('blur','input,select,textarea',function() {
-  validator.validateField($(this),'blur');
+  validator.validateField($(this).attr('id'),'blur');
 });
 ```
 
@@ -168,11 +162,18 @@ It is also common to remove an error as soon as a field gains focus again.
 ```javascript
 //jquery example
 $('#my_form').on('focus','input,select,textarea',function() {
-  validator.clearError($(this));
+  validator.clearError($(this).attr('id'));
 });
 ```
+To clear multiple errors at once:
 
-There is also a clearErrors method that accepts an array of fields (much like validateFields).
+```javascript
+//clear all errors
+validator.clearErrors();
+
+//clear selected errors
+validator.clearErrors(['name','home_phone']);
+```
 
 Setting Default Configuration Options
 ===================================
@@ -181,10 +182,11 @@ If you are going to use the FormValidator multiple places, it would probably be 
 the configuration options.
 
 ```javascript
-FormValidator.prototype.defaults.getFieldKey = function(field) {
+FormValidator.prototype.defaults.addError = function(field, message) {
   //jquery example
-  return field.attr('id');
+  field.addClass('error');
+  alert(message);
 };
 
-//when creating a validator object, you now don't need to pass in the getFieldKey option
+//when creating a validator object, you now don't need to pass in the addError option
 ```

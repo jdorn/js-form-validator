@@ -90,11 +90,6 @@ $(document).ready(function() {
 			$('.error_message',field.parent('.input-row')).text('').hide();
 			field.removeClass('error');
 		},
-		//this takes a field as input and returns a string identifier of the field
-		//this identifier is used to lookup the rules for the field
-		getFieldKey: function(field) {
-			return field.attr('name');
-		},
 		//this is a final callback after failing to validate one or more fields
 		//it can be used to display a summary message, scroll to the first error, etc.
 		onErrors: function(errors, event) {
@@ -103,29 +98,38 @@ $(document).ready(function() {
 		//this defines the actual validation rules
 		rules: {
 			//this is a basic non-empty check
-			'name': function(field, event) {
-				if(!field.val()) throw "Please enter your name";
+			'name': {
+				'field': $('input[name=name]'),
+				'validate': function(field, event) {
+					if(!field.val()) throw "Please enter your name";
+				}
 			},
 			
 			//this demonstrates more than one error message
 			//and handling more than one event
-			'phone': function(field, event) {
-				//if the validation is fired from a blur event,
-				//don't throw any errors if it is empty
-				if(event==='blur' && !field.val()) return true;
-				
-				if(!field.val()) throw "A phone number is required";
-				
-				var phone_pattern = /^[2-9]\d{2}-?\d{3}-?\d{4}$/;
-				if(!phone_pattern.test(field.val())) throw "Please enter a valid phone number";
+			'phone': {
+				'field': $('input[name=phone]'),
+				'validate': function(field, event) {
+					//if the validation is fired from a blur event,
+					//don't throw any errors if it is empty
+					if(event==='blur' && !field.val()) return true;
+					
+					if(!field.val()) throw "A phone number is required";
+					
+					var phone_pattern = /^[2-9]\d{2}-?\d{3}-?\d{4}$/;
+					if(!phone_pattern.test(field.val())) throw "Please enter a valid phone number";
+				}
 			},
 			
 			//checking for numbers within a range
-			'age': function(field, event) {
-				if(!field.val()) throw "Please enter your age";
-				if(isNaN(field.val())) throw "Only numeric values are allowed";
-				if(field.val() > 100) throw "Age can't be greater than 100";
-				if(field.val() < 18) throw "You must be 18 or older to use this form";
+			'age': {
+				'field': $('input[name=age]'),
+				'validate': function(field, event) {
+					if(!field.val()) throw "Please enter your age";
+					if(isNaN(field.val())) throw "Only numeric values are allowed";
+					if(field.val() > 100) throw "Age can't be greater than 100";
+					if(field.val() < 18) throw "You must be 18 or older to use this form";
+				}
 			}
 		}
 	});
@@ -136,19 +140,19 @@ $(document).ready(function() {
 	
 	//this does validation every time a field loses focus
 	$('form').on('blur','input,select',function() {
-		validator.validateField($(this),'blur');
+		validator.validateField($(this).attr('name'),'blur');
 	});
 	
 	//this clears errors every time a field gains focus
 	$('form').on('focus','input,select',function() {
-		validator.clearError($(this));
+		validator.clearError($(this).attr('name'));
 	});
 	
 	//this is for the validate links
 	$('.validate_section').click(function() {
 		var fields = [];
 		$('input,select',$(this).closest('.section')).each(function() {
-			fields.push($(this));
+			fields.push($(this).attr('name'));
 		});
 		
 		if(validator.validateFields(fields,'submit')) {
@@ -157,12 +161,7 @@ $(document).ready(function() {
 		return false;
 	});
 	$('.validate_form').click(function() {
-		var fields = [];
-		$('input,select').each(function() {
-			fields.push($(this));
-		});
-		
-		if(validator.validateFields(fields,'submit')) {
+		if(validator.validateFields('submit')) {
 			alert('success');
 		}
 		return false;
@@ -172,7 +171,7 @@ $(document).ready(function() {
 	$('.clear_section').click(function() {
 		var fields = [];
 		$('input,select',$(this).closest('.section')).each(function() {
-			fields.push($(this));
+			fields.push($(this).attr('name'));
 		});
 		
 		validator.clearErrors(fields);
