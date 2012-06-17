@@ -101,8 +101,10 @@ rules
 --------------------
 This is an object containing all the validation logic.
 The keys are field identifiers and the values are objects containing a 'field' and 'validate' parameter.
+
 Most of the time, you probably want to use the field's id or name as the key.
-The 'field' parameter is what will pass into the validate function as well as addError, removeError, etc.
+
+The 'field' parameter of a rule is what will pass into the validate function as well as addError, removeError, etc.
 The 'validate' parameter is a function that throws an exception message when validation fails.
 The 1st argument to the validation function is the field.  The 2nd argument is the event that caused the validation.
 
@@ -144,7 +146,7 @@ $('#my_form').on('submit',function() {
   return validator.validateFields('submit');
   
   //this will only run the selected validation rules
-  return validator.validateFields(['name','home_phone']);
+  return validator.validateFields(['name','home_phone'], 'submit');
 });
 ```
 
